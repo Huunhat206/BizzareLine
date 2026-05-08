@@ -1,5 +1,6 @@
 return function(Fluent, Window, Tabs)
     local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local LocalPlayer = Players.LocalPlayer
     local Camera = workspace.CurrentCamera
 
@@ -12,6 +13,9 @@ return function(Fluent, Window, Tabs)
     local currentBoard = nil
     local blacklistedBoards = {}
     local SetPvPStatus = function() end 
+
+    -- Bien dung cho Auto Prestige
+    local AutoPrestigeActive = false
 
     local function ResetCharacter()
         pcall(function()
@@ -169,6 +173,37 @@ return function(Fluent, Window, Tabs)
         end
     end
 
+    -- Logic xu ly Auto Prestige
+    local function ProcessAutoPrestige()
+        while AutoPrestigeActive do
+            task.wait(1) -- Chay 1 giay 1 lan de tranh crash
+            pcall(function()
+                local pData = LocalPlayer:FindFirstChild("PlayerData")
+                local slot = pData and pData:FindFirstChild("SlotData")
+                local levelObj = slot and slot:FindFirstChild("Level")
+                
+                if levelObj and tonumber(levelObj.Value) then
+                    local currentLevel = tonumber(levelObj.Value)
+                    if currentLevel >= 50 and currentLevel <= 55 then
+                        local npcs = workspace:FindFirstChild("Npcs")
+                        local archMage = npcs and npcs:FindFirstChild("Arch Mage")
+                        
+                        if archMage then
+                            local args = {
+                                [1] = archMage,
+                                [2] = "Prestige."
+                            }
+                            local remote = ReplicatedStorage:FindFirstChild("requests")
+                            if remote and remote:FindFirstChild("character") and remote.character:FindFirstChild("dialogue") then
+                                remote.character.dialogue:FireServer(unpack(args))
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+
     Tabs.PvP:AddSection("1. CHON CHE DO CAY PVP")
     local PvPStatusPara = Tabs.PvP:AddParagraph({ Title = "Trang Thai PvP", Content = "Cho bat..." })
     SetPvPStatus = function(txt) PvPStatusPara:SetDesc(txt) end
@@ -198,6 +233,17 @@ return function(Fluent, Window, Tabs)
                 local cf = board and GetBoardCFrame(board)
                 if board and cf then StartCameraLock(board, cf) end
             end
+        end
+    })
+
+    Tabs.PvP:AddSection("3. TU DONG PRESTIGE")
+    Tabs.PvP:AddToggle("Toggle_AutoPrestige", {
+        Title = "Auto Prestige (Tu cap 50 - 55)", 
+        Description = "Tu dong tim NPC Arch Mage de Prestige moi 1 giay",
+        Default = false,
+        Callback = function(Value)
+            AutoPrestigeActive = Value
+            if Value then task.spawn(ProcessAutoPrestige) end
         end
     })
 end
