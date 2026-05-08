@@ -117,34 +117,35 @@ return function(Fluent, Window, Tabs)
                     local targetRoot = currentTargetNPC:FindFirstChild("HumanoidRootPart")
                     if targetRoot then
                         -- HE THONG DINH VI THONG NHAT (Unified Positioning)
+                        -- Bat buoc phai chĩa thẳng vào tâm của quái vật
                         local finalPosition
                         local targetPos = targetRoot.Position
 
                         if currentPosMode == "Behind" then
-                            -- Dung sau lung, chĩa vao quai
                             finalPosition = targetPos - (targetRoot.CFrame.LookVector * currentDistance)
                         elseif currentPosMode == "Above" then
-                            -- Dung tren dau
                             finalPosition = targetPos + Vector3.new(0, currentDistance, 0)
                         elseif currentPosMode == "Under" then
-                            -- Dung duoi chan
                             finalPosition = targetPos + Vector3.new(0, -currentDistance, 0)
                         end
 
                         -- XU LY GIMBAL LOCK KHI DUNG VERTICAL (Above/Under)
-                        -- Dung referenceUp tu con quai de luon chia vao tam
+                        -- Sử dụng trục ngang RightVector của con quái làm vector "lên" chuẩn
+                        -- Điều này ép Roblox phải chĩa toàn thân bạn vào tâm quái
+                        local perfectlyVerticalCF
                         if currentPosMode == "Above" or currentPosMode == "Under" then
-                            -- Hướng nhìn
-                            local lookDirection = targetPos - finalPosition
-                            -- Trục xoay tham chiếu từ con quái (LookVector) để định vị
-                            local referenceUp = targetRoot.CFrame.LookVector 
-                            root.CFrame = CFrame.lookAt(finalPosition, targetPos, referenceUp)
+                            perfectlyVerticalCF = CFrame.lookAt(finalPosition, targetPos, targetRoot.CFrame.RightVector)
                         else
-                            -- Dung Behind chuan lam viec tot ma khong can referenceUp dac biet
-                            root.CFrame = CFrame.lookAt(finalPosition, targetPos)
+                            perfectlyVerticalCF = CFrame.lookAt(finalPosition, targetPos)
                         end
 
                         root.Velocity = Vector3.zero
+
+                        -- Chỉ tele khi lệch stud (tăng lên 2 stud để mượt hơn)
+                        if (root.Position - finalPosition).Magnitude > 2 then
+                            root.CFrame = perfectlyVerticalCF
+                            root.Velocity = Vector3.zero
+                        end
 
                         -- Thuc hien M1
                         local ccc = char:FindFirstChild("client_character_controller")
@@ -207,7 +208,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "Z", "X", "C", "V"},
+        Values = {"E", "R", "S", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
