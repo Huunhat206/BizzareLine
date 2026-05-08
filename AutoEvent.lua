@@ -1,6 +1,7 @@
 return function(Fluent, Window, Tabs)
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
 
     local AutoEventActive = false
@@ -18,6 +19,8 @@ return function(Fluent, Window, Tabs)
     local targetWaitingCFrame = CFrame.new(1193.24, 875.01 + 3, -668.33)
 
     local StatusPara
+    local noclipConn = nil
+    local lockConn = nil
 
     local function UpdateStats()
         if StatusPara then
@@ -33,7 +36,7 @@ return function(Fluent, Window, Tabs)
         return (r == 255 and g == 0 and b == 25)
     end
 
-    -- Ham tim quai moi (Chi goi khi currentTargetNPC chet/invalid)
+    -- Ham tim quai moi
     local function FindNewHighlightNPC()
         local liveFolder = workspace:FindFirstChild("Live")
         if not liveFolder then return nil end
@@ -73,7 +76,72 @@ return function(Fluent, Window, Tabs)
         return false
     end
 
+    -- Tat cac vong lap vat ly
+    local function CleanUpPhysics()
+        if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+        if lockConn then lockConn:Disconnect() lockConn = nil end
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then hum.AutoRotate = true end
+        end
+    end
+
+    -- Bat cac vong lap vat ly khung hinh cao (Sieu muot, chong giat)
+    local function StartPhysicsLocks()
+        CleanUpPhysics()
+
+        -- 1. Noclip: Xuyen thau hitbox cua quai de khong bi day ra
+        noclipConn = RunService.Stepped:Connect(function()
+            if AutoEventActive and currentTargetNPC then
+                local char = LocalPlayer.Character
+                if char then
+                    for _, p in ipairs(char:GetDescendants()) do
+                        if p:IsA("BasePart") and p.CanCollide then
+                            p.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end)
+
+        -- 2. CFrame Lock: Khoa cung vi tri va huong nhin vao quai o moi frame
+        lockConn = RunService.Heartbeat:Connect(function()
+            if AutoEventActive and currentTargetNPC then
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local root = char.HumanoidRootPart
+                    local hum = char:FindFirstChild("Humanoid")
+                    local targetRoot = currentTargetNPC:FindFirstChild("HumanoidRootPart")
+
+                    if targetRoot and hum then
+                        -- Vo hieu hoa AutoRotate de nhan vat bi lock theo dung y muon
+                        hum.AutoRotate = false
+
+                        local finalPosition
+                        local targetPos = targetRoot.Position
+
+                        if currentPosMode == "Behind" then
+                            finalPosition = targetPos - (targetRoot.CFrame.LookVector * currentDistance)
+                        elseif currentPosMode == "Above" then
+                            finalPosition = targetPos + Vector3.new(0.01, currentDistance, 0.01)
+                        elseif currentPosMode == "Under" then
+                            finalPosition = targetPos + Vector3.new(0.01, -currentDistance, 0.01)
+                        end
+
+                        -- Lock truc tiep vao quai (lookAt tao ra goc xoay chia thang mat vao Target)
+                        root.CFrame = CFrame.lookAt(finalPosition, targetPos)
+                        root.Velocity = Vector3.zero
+                        root.RotVelocity = Vector3.zero
+                    end
+                end
+            end
+        end)
+    end
+
     local function ProcessAutoEvent()
+        StartPhysicsLocks()
+
         while AutoEventActive do
             task.wait(0.1) 
             pcall(function()
@@ -109,7 +177,7 @@ return function(Fluent, Window, Tabs)
                         local summonRemote = ccc:FindFirstChild("SummonStand")
                         if summonRemote then
                             pcall(function() summonRemote:FireServer() end)
-                            task.wait(0.5) -- Doi 1 chut cho Stand hien thi
+                            task.wait(0.5)
                         end
                     end
                 end
@@ -117,43 +185,26 @@ return function(Fluent, Window, Tabs)
                 -- 3. LOGIC CHONG TELE LOAN
                 if not IsCurrentTargetValid(currentTargetNPC) then
                     currentTargetNPC = FindNewHighlightNPC()
+                    if not currentTargetNPC then
+                        -- Tra lai quyen xoay nguoi neu khong co quai
+                        local hum = char:FindFirstChild("Humanoid")
+                        if hum then hum.AutoRotate = true end
+                    end
                 end
 
-                -- 4. LOGIC AUTO KILL & DINH VI (Fix Gimbal Lock ngam)
+                -- 4. LOGIC DANH KHI DA BI LOCK (Vi tri da duoc Heartbeat lo)
                 if currentTargetNPC then
-                    local targetRoot = currentTargetNPC:FindFirstChild("HumanoidRootPart")
-                    if targetRoot then
-                        local finalPosition
-                        local targetPos = targetRoot.Position
-
-                        if currentPosMode == "Behind" then
-                            finalPosition = targetPos - (targetRoot.CFrame.LookVector * currentDistance)
-                            root.CFrame = CFrame.lookAt(finalPosition, targetPos)
-                        elseif currentPosMode == "Above" then
-                            -- Lechl 0.01 stud de tranh lật hình, nhan vat se cam dau xuong quai
-                            finalPosition = targetPos + Vector3.new(0.01, currentDistance, 0.01)
-                            root.CFrame = CFrame.lookAt(finalPosition, targetPos)
-                        elseif currentPosMode == "Under" then
-                            -- Lechl 0.01 stud de tranh lật hình, nhan vat se ngoc dau len quai
-                            finalPosition = targetPos + Vector3.new(0.01, -currentDistance, 0.01)
-                            root.CFrame = CFrame.lookAt(finalPosition, targetPos)
+                    if ccc then
+                        local m1 = ccc:FindFirstChild("M1")
+                        if m1 then
+                            pcall(function() m1:FireServer(true, false) end)
                         end
 
-                        root.Velocity = Vector3.zero
-
-                        -- Thuc hien M1 & Skill
-                        if ccc then
-                            local m1 = ccc:FindFirstChild("M1")
-                            if m1 then
-                                pcall(function() m1:FireServer(true, false) end)
-                            end
-
-                            local skillRemote = ccc:FindFirstChild("Skill")
-                            if skillRemote then
-                                for skillName, isEnabled in pairs(selectedSkills) do
-                                    if isEnabled then
-                                        pcall(function() skillRemote:FireServer(skillName, true) end)
-                                    end
+                        local skillRemote = ccc:FindFirstChild("Skill")
+                        if skillRemote then
+                            for skillName, isEnabled in pairs(selectedSkills) do
+                                if isEnabled then
+                                    pcall(function() skillRemote:FireServer(skillName, true) end)
                                 end
                             end
                         end
@@ -162,6 +213,7 @@ return function(Fluent, Window, Tabs)
 
             end)
         end
+        CleanUpPhysics()
     end
 
     Tabs.Event:AddSection("THONG KE SU KIEN")
@@ -200,7 +252,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "Z", "X", "C", "V"},
+        Values = {"E", "R", "S", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
@@ -219,6 +271,8 @@ return function(Fluent, Window, Tabs)
             if Value then
                 currentTargetNPC = nil
                 task.spawn(ProcessAutoEvent)
+            else
+                CleanUpPhysics()
             end
         end
     })
