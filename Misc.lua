@@ -5,10 +5,18 @@ return function(Fluent, Window, Tabs)
     local LocalPlayer = Players.LocalPlayer
 
     local TitleLoopActive = false
-    local TitleLoopSpeed = 0.1 -- Toc do mac dinh la 1.5 giay
+    local TitleLoopSpeed = 1.5 
 
     local function ProcessTitleLoop()
         local currentIndex = 1
+        
+        -- TOI UU 1: Tim RemoteEvent mot lan duy nhat truoc khi vao vong lap
+        local requests = ReplicatedStorage:FindFirstChild("requests")
+        local showTitles = requests and requests:FindFirstChild("character") and requests.character:FindFirstChild("ShowTitles")
+        
+        -- TOI UU 2: Bien luu tru de chong Decode JSON lien tuc
+        local lastJsonString = ""
+        local cachedTitles = {}
         
         while TitleLoopActive do
             pcall(function()
@@ -16,36 +24,38 @@ return function(Fluent, Window, Tabs)
                 if not pData then return end
                 
                 local titlesObj = pData:FindFirstChild("Titles")
-                -- Kiem tra xem titlesObj co thuoc tinh Value khong
                 if titlesObj and titlesObj.Value then
-                    -- Giai ma chuoi JSON thanh mang (table)
-                    local success, decodedTitles = pcall(HttpService.JSONDecode, HttpService, tostring(titlesObj.Value))
+                    local currentJson = tostring(titlesObj.Value)
                     
-                    if success and type(decodedTitles) == "table" and #decodedTitles > 0 then
-                        -- Chong vuot qua so luong neu danh sach title bi thay doi
-                        if currentIndex > #decodedTitles then
+                    -- Chi Decode lai neu chuoi du lieu bi thay doi (VD: Ban vua nhan title moi)
+                    if currentJson ~= lastJsonString then
+                        local success, decodedTitles = pcall(HttpService.JSONDecode, HttpService, currentJson)
+                        if success and type(decodedTitles) == "table" and #decodedTitles > 0 then
+                            cachedTitles = decodedTitles
+                            lastJsonString = currentJson -- Luu lai de so sanh cho lan sau
+                        end
+                    end
+                    
+                    -- Su dung danh sach da Cache de chay Loop (Sieu nhe, khong lag)
+                    if #cachedTitles > 0 then
+                        if currentIndex > #cachedTitles then
                             currentIndex = 1
                         end
                         
-                        local currentTitle = decodedTitles[currentIndex]
+                        local currentTitle = cachedTitles[currentIndex]
                         
-                        -- Gui lenh Equip Title len Server
-                        local requests = ReplicatedStorage:FindFirstChild("requests")
-                        if requests and requests:FindFirstChild("character") then
-                            local showTitles = requests.character:FindFirstChild("ShowTitles")
-                            if showTitles then
-                                showTitles:FireServer(currentTitle)
-                            end
+                        -- Gui lenh len Server
+                        if showTitles then
+                            showTitles:FireServer(currentTitle)
                         end
                         
-                        -- Tang index len 1 cho lan lap tiep theo
                         currentIndex = currentIndex + 1
                     end
                 end
             end)
             
-            -- Nghi 1 khoang thoi gian de tranh lag va chong Remote Spam
-            task.wait(TitleLoopSpeed)
+            -- Nghi 1 khoang thoi gian (dam bao khong bao gio duoi 0.05 de tranh crash)
+            task.wait(math.max(TitleLoopSpeed, 0.05))
         end
     end
 
@@ -65,7 +75,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Misc:AddSlider("Slider_TitleSpeed", {
         Title = "Toc do doi danh hieu (Giay)",
-        Description = "Khoang thoi gian cho giua 2 lan doi (Khuyen nghi: 1- 2s)",
+        Description = "Khoang thoi gian giua 2 lan doi (Khuyen nghi: 1.5s - 2s)",
         Min = 0.1,
         Max = 5.0,
         Default = 1.5,
