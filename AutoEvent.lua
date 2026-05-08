@@ -11,6 +11,7 @@ return function(Fluent, Window, Tabs)
     local selectedSkills = {}
     local eventsJoinedCount = 0
     local lastJoinTime = 0
+    local lastSummonTime = 0 -- Bien chong spam goi Stand
 
     local currentTargetNPC = nil
     local targetWaitingCFrame = CFrame.new(1193.24, 875.01 + 3, -668.33)
@@ -188,14 +189,29 @@ return function(Fluent, Window, Tabs)
                     end
                 end
 
-                -- 2. AUTO SUMMON STAND NEU CHUA CO
+                -- 2. AUTO SUMMON STAND (Chong spam bang cooldown & tim kiem thong minh)
                 local effects = workspace:FindFirstChild("Effects")
                 if effects and ccc then
-                    local standModelName = "." .. LocalPlayer.Name .. "'s Stand"
-                    if not effects:FindFirstChild(standModelName) then
-                        local summonRemote = ccc:FindFirstChild("SummonStand")
-                        if summonRemote then
-                            pcall(function() summonRemote:FireServer() end)
+                    local hasStand = false
+                    local pName = LocalPlayer.Name
+                    local dName = LocalPlayer.DisplayName
+                    
+                    -- Quet toan bo thu muc Effects de tim Stand
+                    for _, effect in ipairs(effects:GetChildren()) do
+                        if (string.find(effect.Name, pName) or string.find(effect.Name, dName)) and string.find(effect.Name, "Stand") then
+                            hasStand = true
+                            break
+                        end
+                    end
+
+                    if not hasStand then
+                        -- Cooldown 5 giay de game kip load Stand ra, tranh goi chong cheo
+                        if tick() - lastSummonTime > 5 then
+                            lastSummonTime = tick()
+                            local summonRemote = ccc:FindFirstChild("SummonStand")
+                            if summonRemote then
+                                pcall(function() summonRemote:FireServer() end)
+                            end
                         end
                     end
                 end
@@ -262,7 +278,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "Z", "X", "C", "V"},
+        Values = {"E", "R", "S", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
