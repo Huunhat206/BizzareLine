@@ -5,7 +5,7 @@ return function(Fluent, Window, Tabs)
     local LocalPlayer = Players.LocalPlayer
 
     local TitleLoopActive = false
-    local TitleLoopSpeed = 1.0 -- Mac dinh 1 giay
+    local TitleLoopSpeed = 1.0 
 
     local function ProcessTitleLoop()
         local currentIndex = 1
@@ -17,18 +17,15 @@ return function(Fluent, Window, Tabs)
                 
                 local titlesObj = pData:FindFirstChild("Titles")
                 if titlesObj and titlesObj.Value then
-                    -- Giai ma chuoi JSON thanh mang titles
                     local success, decodedTitles = pcall(HttpService.JSONDecode, HttpService, tostring(titlesObj.Value))
                     
                     if success and type(decodedTitles) == "table" and #decodedTitles > 0 then
-                        -- Dam bao index luon nam trong pham vi mang
                         if currentIndex > #decodedTitles then
                             currentIndex = 1
                         end
                         
                         local currentTitle = decodedTitles[currentIndex]
                         
-                        -- Gui lenh doi Title
                         local requests = ReplicatedStorage:FindFirstChild("requests")
                         if requests and requests:FindFirstChild("character") then
                             local showTitles = requests.character:FindFirstChild("ShowTitles")
@@ -42,8 +39,8 @@ return function(Fluent, Window, Tabs)
                 end
             end)
             
-            -- Su dung toc do tu Slider (co the xuong toi 0.1s)
-            task.wait(TitleLoopSpeed)
+            -- Đảm bảo task.wait không bao giờ nhỏ hơn 0.05 để tránh crash game
+            task.wait(math.max(TitleLoopSpeed, 0.05))
         end
     end
 
@@ -51,7 +48,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Misc:AddToggle("Toggle_TitleLoop", {
         Title = "Kich hoat Title Loop",
-        Description = "Tu dong xoay vong cac danh hieu ban dang so hữu",
+        Description = "Tu dong xoay vong cac danh hieu ban dang so huu",
         Default = false,
         Callback = function(Value)
             TitleLoopActive = Value
@@ -61,13 +58,14 @@ return function(Fluent, Window, Tabs)
         end
     })
 
+    -- FIX: Thay đổi Rounding để nhận diện số thập phân 0.1
     Tabs.Misc:AddSlider("Slider_TitleSpeed", {
         Title = "Toc do doi (Giay)",
-        Description = "Chinh tu 0.1s (nhanh) den 5s (cham)",
+        Description = "Keo thap de doi nhanh, cao de doi cham",
         Min = 0.1,
         Max = 5.0,
         Default = 1.0,
-        Rounding = 1, -- Cho phep chinh so thap phan (0.1, 0.2...)
+        Rounding = 1, -- Fluent se hien thi 1 chu so thap phan (0.1)
         Callback = function(Value)
             TitleLoopSpeed = Value
         end
