@@ -2,15 +2,16 @@ return function(Fluent, Window, Tabs)
     local Players = game:GetService("Players")
     local HttpService = game:GetService("HttpService")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local RunService = game:GetService("RunService") -- Dung de khoa Title muot hon
+    local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
 
     local TitleLoopActive = false
     local TitleLoopSpeed = 1.5 
     
     local CustomTitleActive = false
+    local CustomTitleColorLoop = false -- Bien kiem soat doi mau
     local CustomTitleText = "TRÙM SERVER VIP"
-    local titleConn = nil -- Ket noi de khoa Title
+    local titleConn = nil
 
     -- =============================================
     -- LOGIC 1: TITLE LOOP (DANH HIEU CO SAN)
@@ -23,7 +24,7 @@ return function(Fluent, Window, Tabs)
         local cachedTitles = {}
         
         while TitleLoopActive do
-            if CustomTitleActive then break end -- Uu tien Custom Title neu dang bat
+            if CustomTitleActive then break end 
             pcall(function()
                 local pData = LocalPlayer:FindFirstChild("PlayerData")
                 if pData and pData:FindFirstChild("Titles") then
@@ -47,12 +48,11 @@ return function(Fluent, Window, Tabs)
     end
 
     -- =============================================
-    -- LOGIC 2: KHOA CUSTOM TITLE (CLIENT-SIDE)
+    -- LOGIC 2: KHOA TITLE & DOI MAU (CLIENT-SIDE)
     -- =============================================
     local function LockTitle()
         if titleConn then titleConn:Disconnect() end
         
-        -- Dung RenderStepped de khoa ngay truoc khi khung hinh duoc ve ra
         titleConn = RunService.RenderStepped:Connect(function()
             if not CustomTitleActive then 
                 if titleConn then titleConn:Disconnect() titleConn = nil end
@@ -65,9 +65,16 @@ return function(Fluent, Window, Tabs)
                     if desc:IsA("TextLabel") and desc.Text ~= "" then
                         local billboard = desc:FindFirstAncestorOfClass("BillboardGui")
                         if billboard then
-                            -- Ep text luon la CustomTitleText
+                            -- 1. Ep text luon la CustomTitleText
                             if desc.Text ~= CustomTitleText then
                                 desc.Text = CustomTitleText
+                            end
+                            
+                            -- 2. Hieu ung doi mau RGB (Rainbow) neu duoc bat
+                            if CustomTitleColorLoop then
+                                -- tick() % 3 / 3 nghia la mat 3 giay de quet het 1 vong mau
+                                local hue = tick() % 3 / 3 
+                                desc.TextColor3 = Color3.fromHSV(hue, 1, 1)
                             end
                         end
                     end
@@ -76,6 +83,9 @@ return function(Fluent, Window, Tabs)
         end)
     end
 
+    -- =============================================
+    -- GIAO DIEN (UI)
+    -- =============================================
     Tabs.Misc:AddSection("TU DONG DOI DANH HIEU (TITLE LOOP)")
 
     Tabs.Misc:AddToggle("Toggle_TitleLoop", {
@@ -85,7 +95,7 @@ return function(Fluent, Window, Tabs)
         Callback = function(Value)
             TitleLoopActive = Value
             if Value then
-                CustomTitleActive = false -- Tat Custom Title neu bat Loop
+                CustomTitleActive = false 
                 task.spawn(ProcessTitleLoop)
             end
         end
@@ -107,16 +117,26 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Misc:AddToggle("Toggle_LockTitle", {
         Title = "Khoa Custom Title",
-        Description = "Ep danh hieu luon hien thi (Chi minh ban thay)",
+        Description = "Ep danh hieu luon hien thi chu ban da nhap",
         Default = false,
         Callback = function(Value)
             CustomTitleActive = Value
             if Value then
-                TitleLoopActive = false -- Tat Loop neu bat Custom
+                TitleLoopActive = false 
                 LockTitle()
             else
                 if titleConn then titleConn:Disconnect() titleConn = nil end
             end
+        end
+    })
+
+    -- NUT BAT TAT HIEU UNG NHIEU MAU
+    Tabs.Misc:AddToggle("Toggle_RainbowTitle", {
+        Title = "Hieu ung LED RGB (Doi mau)",
+        Description = "Lam chu cua Custom Title doi mau lien tuc nhu LED 7 mau",
+        Default = false,
+        Callback = function(Value)
+            CustomTitleColorLoop = Value
         end
     })
 end
