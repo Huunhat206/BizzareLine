@@ -42,6 +42,7 @@ local Tabs = {
     Items    = Window:AddTab({ Title = "Auto Items", Icon = "box" }),
     Event    = Window:AddTab({ Title = "World Event", Icon = "star" }),
     PvP      = Window:AddTab({ Title = "PvP Queue", Icon = "swords" }),
+    Misc     = Window:AddTab({ Title = "Misc", Icon = "component" }), -- DONG MOI THEM VAO
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Webhook  = Window:AddTab({ Title = "Webhook", Icon = "link" }),
     Settings = Window:AddTab({ Title = "Cai Dat Hub", Icon = "settings" })
@@ -136,6 +137,7 @@ LoadModule("Autoarrow.lua")
 LoadModule("AutoItems.lua")
 LoadModule("AutoEvent.lua")
 LoadModule("AutoQueue.lua")
+LoadModule("Misc.lua")
 LoadModule("Teleport.lua")
 
 -- ==========================================
