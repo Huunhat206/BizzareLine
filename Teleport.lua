@@ -1,5 +1,6 @@
 return function(Fluent, Window, Tabs)
     local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
     local LocalPlayer = Players.LocalPlayer
 
     -- Danh sach ten Bus Stop & Event
@@ -19,7 +20,7 @@ return function(Fluent, Window, Tabs)
         "Prison Escape Raid",
         "DIO Raid",
         "Advol Raid",
-        "Jotaro Kujo Raid"
+        "Jotaro Kujo Raid Z"
     }
 
     -- Toa do tong hop
@@ -53,7 +54,7 @@ return function(Fluent, Window, Tabs)
         ["Prison Escape Raid"]  = Vector3.new(882.56, 886.39, -576.65),
         ["DIO Raid"]            = Vector3.new(2795.86, 950.71, 742.35),
         ["Advol Raid"]          = Vector3.new(337.35, 876.08, 1025.74),
-        ["Jotaro Kujo Raid"]  = Vector3.new(1075.13, 884.23, 204.28)
+        ["Jotaro Kujo Raid Z"]  = Vector3.new(1075.13, 884.23, 204.28)
     }
 
     local function TeleportTo(locationName)
@@ -113,7 +114,7 @@ return function(Fluent, Window, Tabs)
     })
 
     -- ==========================================
-    -- KHU VUC 2: RAIDS
+    -- KHU VUC 2: RAIDS & TOKENS
     -- ==========================================
     Tabs.Teleport:AddSection("2. DI CHUYEN KHU VUC RAID")
 
@@ -136,4 +137,50 @@ return function(Fluent, Window, Tabs)
             TeleportTo(selectedRaid)
         end
     })
+
+    -- Khoi tao bang hien thi Token
+    local TokenDisplay = Tabs.Teleport:AddParagraph({
+        Title = "So Luong Raid Tokens Hien Co",
+        Content = "Dang tai du lieu..."
+    })
+
+    -- Logic Cap Nhat Token Live
+    local function UpdateTokenDisplay()
+        pcall(function()
+            local pData = LocalPlayer:FindFirstChild("PlayerData")
+            if not pData then return end
+            
+            local slot = pData:FindFirstChild("SlotData")
+            if not slot then return end
+            
+            local raidTokensObj = slot:FindFirstChild("RaidTokens")
+            if not raidTokensObj then return end
+
+            local ok, decoded = pcall(HttpService.JSONDecode, HttpService, tostring(raidTokensObj.Value))
+            if ok and type(decoded) == "table" then
+                local displayText = ""
+                local hasToken = false
+
+                -- Duyet qua bang token va tao chuoi hien thi
+                for tokenName, tokenAmount in pairs(decoded) do
+                    hasToken = true
+                    displayText = displayText .. "- " .. tostring(tokenName) .. " : " .. tostring(tokenAmount) .. "\n"
+                end
+
+                if not hasToken then
+                    displayText = "Khong co Token nao trong tui."
+                end
+
+                TokenDisplay:SetDesc(displayText)
+            end
+        end)
+    end
+
+    -- Vong lap chay ngam de cap nhat Token moi 2 giay
+    task.spawn(function()
+        while task.wait(2) do
+            UpdateTokenDisplay()
+        end
+    end)
+
 end
