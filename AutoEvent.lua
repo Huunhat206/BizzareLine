@@ -53,7 +53,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Event:AddToggle("Toggle_AutoGraveyard", {
         Title = "Auto Teleport Graveyard Event",
-        Description = "Tu dong giu nhan vat co dinh (Lech 2 stud la tele ve lai)",
+        Description = "auto tele",
         Default = false,
         Callback = function(Value)
             AutoEventActive = Value
@@ -63,6 +63,6 @@ return function(Fluent, Window, Tabs)
     
     Tabs.Event:AddParagraph({
         Title = "Thong Tin He Thong",
-        Content = "- He thong co kem Auto Respawn neu chang may bi chet.\n- Quet lien tuc: Neu bi day lech qua 2 stud se lap tuc giat ve vi tri goc."
+        Content = "auto farm"
     })
 end
