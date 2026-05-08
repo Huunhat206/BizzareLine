@@ -19,7 +19,7 @@ return function(Fluent, Window, Tabs)
         "Prison Escape Raid",
         "DIO Raid",
         "Advol Raid",
-        "Jotaro Kujo Raid Z"
+        "Jotaro Kujo Raid"
     }
 
     -- Toa do tong hop
@@ -53,7 +53,7 @@ return function(Fluent, Window, Tabs)
         ["Prison Escape Raid"]  = Vector3.new(882.56, 886.39, -576.65),
         ["DIO Raid"]            = Vector3.new(2795.86, 950.71, 742.35),
         ["Advol Raid"]          = Vector3.new(337.35, 876.08, 1025.74),
-        ["Jotaro Kujo Raid Z"]  = Vector3.new(1075.13, 884.23, 204.28)
+        ["Jotaro Kujo Raid"]  = Vector3.new(1075.13, 884.23, 204.28)
     }
 
     local function TeleportTo(locationName)
