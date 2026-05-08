@@ -40,6 +40,7 @@ local Window = Fluent:CreateWindow({
 local Tabs = {
     AutoRoll = Window:AddTab({ Title = "Auto Arrow", Icon = "target" }),
     Items    = Window:AddTab({ Title = "Auto Items", Icon = "box" }),
+    Event    = Window:AddTab({ Title = "World Event", Icon = "star" }),
     PvP      = Window:AddTab({ Title = "PvP Queue", Icon = "swords" }),
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Webhook  = Window:AddTab({ Title = "Webhook", Icon = "link" }),
@@ -101,7 +102,7 @@ Btn.MouseButton1Up:Connect(function()
 end)
 
 -- ==========================================
--- 3. CHINH SUA TAB WEBHOOK GOC O DAY
+-- 3. CHINH SUA TAB WEBHOOK
 -- ==========================================
 Tabs.Webhook:AddSection("WEBHOOK AUTO ARROW & PVP")
 Tabs.Webhook:AddInput("Input_MainWebhook", {
@@ -113,23 +114,29 @@ Tabs.Webhook:AddInput("Input_MainWebhook", {
 })
 
 -- ==========================================
--- 4. LOAD CAC MODULE (Thay link cua ban vao day)
+-- 4. HE THONG TAI MODULE TU GITHUB
 -- ==========================================
--- Module Auto Arrow
-local autoArrowSuccess, autoArrowLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/Autoarrow.lua"))() end)
-if autoArrowSuccess and autoArrowLogic then pcall(function() autoArrowLogic(Fluent, Window, Tabs) end) end
+local repoBaseUrl = "https://raw.githubusercontent.com/Huunhat206/BizzareLine/main/"
 
--- Module Auto Items
-local autoItemSuccess, autoItemLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/AutoItems.lua"))() end)
-if autoItemSuccess and autoItemLogic then pcall(function() autoItemLogic(Fluent, Window, Tabs) end) end
+-- Ham ho tro tai module
+local function LoadModule(fileName)
+    local success, moduleLogic = pcall(function()
+        return loadstring(game:HttpGet(repoBaseUrl .. fileName))()
+    end)
+    
+    if success and moduleLogic then
+        pcall(function() moduleLogic(Fluent, Window, Tabs) end)
+    else
+        warn("[Nthuc Hub] Khong the tai module: " .. fileName)
+    end
+end
 
--- Module Auto Queue
-local autoQueueSuccess, autoQueueLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/AutoQueue.lua"))() end)
-if autoQueueSuccess and autoQueueLogic then pcall(function() autoQueueLogic(Fluent, Window, Tabs) end) end
-
--- Module Teleport
-local teleportSuccess, teleportLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/Teleport.lua"))() end)
-if teleportSuccess and teleportLogic then pcall(function() teleportLogic(Fluent, Window, Tabs) end) end
+-- Tai cac module chuc nang
+LoadModule("Autoarrow.lua")
+LoadModule("AutoItems.lua")
+LoadModule("AutoEvent.lua")
+LoadModule("AutoQueue.lua")
+LoadModule("Teleport.lua")
 
 -- ==========================================
 -- 5. SETUP HE THONG LUU CONFIG
