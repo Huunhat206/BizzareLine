@@ -22,6 +22,14 @@ return function(Fluent, Window, Tabs)
         end
     end
 
+    -- Ham kiem tra mau chinh xac tranh sai so thap phan
+    local function IsTargetColor(color3)
+        local r = math.floor(color3.R * 255 + 0.5)
+        local g = math.floor(color3.G * 255 + 0.5)
+        local b = math.floor(color3.B * 255 + 0.5)
+        return (r == 255 and g == 0 and b == 25)
+    end
+
     local function GetHighlightNPC()
         local liveFolder = workspace:FindFirstChild("Live")
         if not liveFolder then return nil end
@@ -31,8 +39,16 @@ return function(Fluent, Window, Tabs)
                 local hum = obj:FindFirstChild("Humanoid")
                 if hum and hum.Health > 0 then
                     -- Quet tim object Highlight nam bat ky dau ben trong NPC
-                    if obj:FindFirstChildWhichIsA("Highlight", true) then
-                        return obj
+                    local highlight = obj:FindFirstChildWhichIsA("Highlight", true)
+                    
+                    if highlight and highlight.Enabled then
+                        -- Kiem tra xem mau co phai la [255, 0, 25] khong
+                        local matchOutline = IsTargetColor(highlight.OutlineColor)
+                        local matchFill = IsTargetColor(highlight.FillColor)
+                        
+                        if matchOutline or matchFill then
+                            return obj
+                        end
                     end
                 end
             end
@@ -68,7 +84,7 @@ return function(Fluent, Window, Tabs)
                     end
                 end
 
-                -- 2. LOGIC AUTO KILL QUAI CO HIGHLIGHT
+                -- 2. LOGIC AUTO KILL QUAI CO HIGHLIGHT MAU DO [255, 0, 25]
                 local targetNPC = GetHighlightNPC()
                 if targetNPC then
                     local targetRoot = targetNPC:FindFirstChild("HumanoidRootPart")
@@ -160,7 +176,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Event:AddToggle("Toggle_AutoGraveyard", {
         Title = "Kich Hoat Auto World Event",
-        Description = "Tu tele vao Graveyard, tu tim & danh quai co Highlight",
+        Description = "Tu tele vao Graveyard, tu tim & danh quai co Highlight Do",
         Default = false,
         Callback = function(Value)
             AutoEventActive = Value
