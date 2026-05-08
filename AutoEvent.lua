@@ -32,34 +32,59 @@ return function(Fluent, Window, Tabs)
         return (r == 255 and g == 0 and b == 25)
     end
 
-    -- Toi uu hoa thuat toan tim quai (Giam giat lag)
+    -- Tim quai gan nhat co highlight do trong pham vi 200 stud
     local function FindNewHighlightNPC()
         local liveFolder = workspace:FindFirstChild("Live")
         if not liveFolder then return nil end
 
+        local char = LocalPlayer.Character
+        local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+        if not rootPart then return nil end
+
+        local playerPos = rootPart.Position
+        local closestNPC = nil
+        local shortestDist = 200 -- Gioi han quet 200 stud
+
         for _, obj in ipairs(liveFolder:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
                 local hum = obj:FindFirstChild("Humanoid")
-                if hum and hum.Health > 0 then
-                    -- Tim Highlight o lop ngoai cung truoc cho nhe, neu khong co moi quet sau
-                    local highlight = obj:FindFirstChildOfClass("Highlight") or obj:FindFirstChildWhichIsA("Highlight", true)
+                local targetRoot = obj:FindFirstChild("HumanoidRootPart")
+
+                if hum and hum.Health > 0 and targetRoot then
+                    local dist = (playerPos - targetRoot.Position).Magnitude
                     
-                    if highlight and highlight.Enabled then
-                        if IsTargetColor(highlight.OutlineColor) or IsTargetColor(highlight.FillColor) then
-                            return obj
+                    if dist <= shortestDist then
+                        local highlight = obj:FindFirstChildOfClass("Highlight") or obj:FindFirstChildWhichIsA("Highlight", true)
+                        
+                        if highlight and highlight.Enabled then
+                            if IsTargetColor(highlight.OutlineColor) or IsTargetColor(highlight.FillColor) then
+                                closestNPC = obj
+                                shortestDist = dist
+                            end
                         end
                     end
                 end
             end
         end
-        return nil
+        return closestNPC
     end
 
+    -- Kiem tra muc tieu hien tai con song, con highlight va nam trong 200 stud khong
     local function IsCurrentTargetValid(npcModel)
         if not npcModel or not npcModel.Parent or not npcModel:FindFirstChild("HumanoidRootPart") then return false end
         local hum = npcModel:FindFirstChild("Humanoid")
-        if not hum or hum.Health <= 0 then return false end
+        local targetRoot = npcModel:FindFirstChild("HumanoidRootPart")
+        if not hum or hum.Health <= 0 or not targetRoot then return false end
         
+        local char = LocalPlayer.Character
+        local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            -- Neu bi vang ra xa khoi 200 stud thi huy muc tieu
+            if (rootPart.Position - targetRoot.Position).Magnitude > 200 then
+                return false
+            end
+        end
+
         local highlight = npcModel:FindFirstChildOfClass("Highlight") or npcModel:FindFirstChildWhichIsA("Highlight", true)
         if highlight and highlight.Enabled then
             if IsTargetColor(highlight.OutlineColor) or IsTargetColor(highlight.FillColor) then
@@ -69,7 +94,6 @@ return function(Fluent, Window, Tabs)
         return false
     end
 
-    -- Xoa bo cac vong lap vat ly khi tat Auto
     local function CleanUpPhysics()
         if noclipConn then noclipConn:Disconnect() noclipConn = nil end
         if lockConn then lockConn:Disconnect() lockConn = nil end
@@ -81,11 +105,9 @@ return function(Fluent, Window, Tabs)
         end
     end
 
-    -- Khoi tao luong vat ly rieng biet (Sieu nhe, khong anh huong FPS)
     local function StartPhysicsLocks()
         CleanUpPhysics()
 
-        -- Luong Noclip (Toi uu: Chi lay BasePart o lop ngoai cung)
         noclipConn = RunService.Stepped:Connect(function()
             if not AutoEventActive then return end
             local char = LocalPlayer.Character
@@ -98,7 +120,6 @@ return function(Fluent, Window, Tabs)
             end
         end)
 
-        -- Luong khoa CFrame (Chay o Heartbeat de dong bo voi game engine)
         lockConn = RunService.Heartbeat:Connect(function()
             if not AutoEventActive then return end
             
@@ -128,7 +149,6 @@ return function(Fluent, Window, Tabs)
                     root.RotVelocity = Vector3.zero
                 end
             else
-                -- Khi chua co quai ma dang trong phong cho
                 if hum then hum.AutoRotate = true end
                 if tick() - lastJoinTime < 60 then
                     if (root.Position - targetWaitingCFrame.Position).Magnitude > 2 then
@@ -145,7 +165,7 @@ return function(Fluent, Window, Tabs)
         StartPhysicsLocks()
 
         while AutoEventActive do
-            task.wait(0.2) -- Giam tan suat quet Event/Skill de tiet kiem CPU
+            task.wait(0.2) 
             pcall(function()
                 local char = LocalPlayer.Character
                 if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -180,12 +200,12 @@ return function(Fluent, Window, Tabs)
                     end
                 end
 
-                -- 3. LOGIC CHONG TELE LOAN (Quet quai moi neu can)
+                -- 3. LOGIC CHONG TELE LOAN
                 if not IsCurrentTargetValid(currentTargetNPC) then
                     currentTargetNPC = FindNewHighlightNPC()
                 end
 
-                -- 4. FIRE SKILL & M1 (Vi tri da duoc lock o Heartbeat)
+                -- 4. FIRE SKILL & M1
                 if currentTargetNPC and ccc then
                     local m1 = ccc:FindFirstChild("M1")
                     if m1 then pcall(function() m1:FireServer(true, false) end) end
@@ -242,7 +262,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "S", "X", "C", "V"},
+        Values = {"E", "R", "Z", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
@@ -254,7 +274,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Event:AddToggle("Toggle_AutoGraveyard", {
         Title = "Kich Hoat Auto World Event",
-        Description = "Tele vao phong cho, farm chết từng con quai Highlight Do",
+        Description = "Tele vao phong cho, farm quai Highlight Do (Quet < 200 stud)",
         Default = false,
         Callback = function(Value)
             AutoEventActive = Value
