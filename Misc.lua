@@ -5,7 +5,7 @@ return function(Fluent, Window, Tabs)
     local LocalPlayer = Players.LocalPlayer
 
     local TitleLoopActive = false
-    local TitleLoopSpeed = 1.5 -- Toc do mac dinh la 1.5 giay
+    local TitleLoopSpeed = 1.0 -- Mac dinh 1 giay
 
     local function ProcessTitleLoop()
         local currentIndex = 1
@@ -16,20 +16,19 @@ return function(Fluent, Window, Tabs)
                 if not pData then return end
                 
                 local titlesObj = pData:FindFirstChild("Titles")
-                -- Kiem tra xem titlesObj co thuoc tinh Value khong
                 if titlesObj and titlesObj.Value then
-                    -- Giai ma chuoi JSON thanh mang (table)
+                    -- Giai ma chuoi JSON thanh mang titles
                     local success, decodedTitles = pcall(HttpService.JSONDecode, HttpService, tostring(titlesObj.Value))
                     
                     if success and type(decodedTitles) == "table" and #decodedTitles > 0 then
-                        -- Chong vuot qua so luong neu danh sach title bi thay doi
+                        -- Dam bao index luon nam trong pham vi mang
                         if currentIndex > #decodedTitles then
                             currentIndex = 1
                         end
                         
                         local currentTitle = decodedTitles[currentIndex]
                         
-                        -- Gui lenh Equip Title len Server
+                        -- Gui lenh doi Title
                         local requests = ReplicatedStorage:FindFirstChild("requests")
                         if requests and requests:FindFirstChild("character") then
                             local showTitles = requests.character:FindFirstChild("ShowTitles")
@@ -38,13 +37,12 @@ return function(Fluent, Window, Tabs)
                             end
                         end
                         
-                        -- Tang index len 1 cho lan lap tiep theo
                         currentIndex = currentIndex + 1
                     end
                 end
             end)
             
-            -- Nghi 1 khoang thoi gian de tranh lag va chong Remote Spam
+            -- Su dung toc do tu Slider (co the xuong toi 0.1s)
             task.wait(TitleLoopSpeed)
         end
     end
@@ -53,7 +51,7 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Misc:AddToggle("Toggle_TitleLoop", {
         Title = "Kich hoat Title Loop",
-        Description = "Tu dong xoay vong cac danh hieu ban dang so huu tren dau",
+        Description = "Tu dong xoay vong cac danh hieu ban dang so hữu",
         Default = false,
         Callback = function(Value)
             TitleLoopActive = Value
@@ -64,12 +62,12 @@ return function(Fluent, Window, Tabs)
     })
 
     Tabs.Misc:AddSlider("Slider_TitleSpeed", {
-        Title = "Toc do doi danh hieu (Giay)",
-        Description = "Khoang thoi gian cho giua 2 lan doi (Khuyen nghi: 1.5 - 2s)",
-        Min = 0.5,
+        Title = "Toc do doi (Giay)",
+        Description = "Chinh tu 0.1s (nhanh) den 5s (cham)",
+        Min = 0.1,
         Max = 5.0,
-        Default = 1.5,
-        Rounding = 1,
+        Default = 1.0,
+        Rounding = 1, -- Cho phep chinh so thap phan (0.1, 0.2...)
         Callback = function(Value)
             TitleLoopSpeed = Value
         end
