@@ -12,6 +12,9 @@ return function(Fluent, Window, Tabs)
     local eventsJoinedCount = 0
     local lastJoinTime = 0
 
+    -- Bien luu muc tieu hien tai de chong tele loan
+    local currentTargetNPC = nil
+
     local targetWaitingCFrame = CFrame.new(1193.24, 875.01 + 3, -668.33)
 
     local StatusPara
@@ -30,7 +33,8 @@ return function(Fluent, Window, Tabs)
         return (r == 255 and g == 0 and b == 25)
     end
 
-    local function GetHighlightNPC()
+    -- Ham tim quai moi (Chi goi khi currentTargetNPC chet/invalid)
+    local function FindNewHighlightNPC()
         local liveFolder = workspace:FindFirstChild("Live")
         if not liveFolder then return nil end
 
@@ -56,6 +60,24 @@ return function(Fluent, Window, Tabs)
         return nil
     end
 
+    -- Ham kiem tra currentTargetNPC con song va valid khong
+    local function IsCurrentTargetValid(npcModel)
+        if not npcModel or not npcModel.Parent or not npcModel:FindFirstChild("HumanoidRootPart") then return false end
+        local hum = npcModel:FindFirstChild("Humanoid")
+        if not hum or hum.Health <= 0 then return false end
+        
+        -- Kiem tra lai Highlight de safe
+        local highlight = npcModel:FindFirstChildWhichIsA("Highlight", true)
+        if highlight and highlight.Enabled then
+            local matchOutline = IsTargetColor(highlight.OutlineColor)
+            local matchFill = IsTargetColor(highlight.FillColor)
+            if matchOutline or matchFill then
+                return true
+            end
+        end
+        return false
+    end
+
     local function ProcessAutoEvent()
         while AutoEventActive do
             task.wait(0.1) -- Toc do quet nhanh de combat muot ma
@@ -64,7 +86,7 @@ return function(Fluent, Window, Tabs)
                 if not char or not char:FindFirstChild("HumanoidRootPart") then return end
                 local root = char.HumanoidRootPart
 
-                -- 1. KIEM TRA THONG BAO WORLD EVENT
+                -- 1. KIEM TRA THONG BAO WORLD EVENT (Chi tele khi bat Toggle)
                 local pGui = LocalPlayer:FindFirstChild("PlayerGui")
                 local mainHud = pGui and pGui:FindFirstChild("MainHud")
                 local worldEvent = mainHud and mainHud:FindFirstChild("worldevent")
@@ -73,7 +95,7 @@ return function(Fluent, Window, Tabs)
                 if modeLbl and modeLbl:IsA("TextLabel") then
                     local text = string.lower(modeLbl.Text)
                     if string.find(text, "graveyard") then
-                        -- Chi tele 1 lan moi 60 giay de tranh viec bi giat nguoc lai phong cho lien tuc
+                        -- Chi tele 1 lan moi 60 giay
                         if tick() - lastJoinTime > 60 then
                             lastJoinTime = tick()
                             eventsJoinedCount = eventsJoinedCount + 1
@@ -84,21 +106,42 @@ return function(Fluent, Window, Tabs)
                     end
                 end
 
-                -- 2. LOGIC AUTO KILL QUAI CO HIGHLIGHT MAU DO [255, 0, 25]
-                local targetNPC = GetHighlightNPC()
-                if targetNPC then
-                    local targetRoot = targetNPC:FindFirstChild("HumanoidRootPart")
+                -- 2. LOGIC CHONG TELE LOAN: Kiem tra muc tieu hien tai truoc
+                if not IsCurrentTargetValid(currentTargetNPC) then
+                    -- Neu muc tieu cu da chet/invalid, tim con moi
+                    currentTargetNPC = FindNewHighlightNPC()
+                end
+
+                -- 3. LOGIC AUTO KILL (Chi hoat dong neu co muc tieu valid)
+                if currentTargetNPC then
+                    local targetRoot = currentTargetNPC:FindFirstChild("HumanoidRootPart")
                     if targetRoot then
-                        -- Tinh toan vi tri dua tren Dropdown va Slider
-                        local tCF = targetRoot.CFrame
+                        -- HE THONG DINH VI THONG NHAT (Unified Positioning)
+                        local finalPosition
+                        local targetPos = targetRoot.Position
+
                         if currentPosMode == "Behind" then
-                            root.CFrame = tCF * CFrame.new(0, 0, currentDistance)
+                            -- Dung sau lung, chĩa vao quai
+                            finalPosition = targetPos - (targetRoot.CFrame.LookVector * currentDistance)
                         elseif currentPosMode == "Above" then
-                            root.CFrame = tCF * CFrame.new(0, currentDistance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                            -- Dung tren dau
+                            finalPosition = targetPos + Vector3.new(0, currentDistance, 0)
                         elseif currentPosMode == "Under" then
-                            root.CFrame = tCF * CFrame.new(0, -currentDistance, 0) * CFrame.Angles(math.rad(90), 0, 0)
+                            -- Dung duoi chan
+                            finalPosition = targetPos + Vector3.new(0, -currentDistance, 0)
+                        end
+
+                        -- XU LY GIMBAL LOCK KHI DUNG VERTICAL (Above/Under)
+                        -- Dung referenceUp tu con quai de luon chia vao tam
+                        if currentPosMode == "Above" or currentPosMode == "Under" then
+                            -- Hướng nhìn
+                            local lookDirection = targetPos - finalPosition
+                            -- Trục xoay tham chiếu từ con quái (LookVector) để định vị
+                            local referenceUp = targetRoot.CFrame.LookVector 
+                            root.CFrame = CFrame.lookAt(finalPosition, targetPos, referenceUp)
                         else
-                            root.CFrame = tCF * CFrame.new(0, 0, currentDistance)
+                            -- Dung Behind chuan lam viec tot ma khong can referenceUp dac biet
+                            root.CFrame = CFrame.lookAt(finalPosition, targetPos)
                         end
 
                         root.Velocity = Vector3.zero
@@ -111,7 +154,7 @@ return function(Fluent, Window, Tabs)
                                 pcall(function() m1:FireServer(true, false) end)
                             end
 
-                            -- Thuc hien Skill (chi danh cac skill duoc chon)
+                            -- Thuc hien Skill
                             local skillRemote = ccc:FindFirstChild("Skill")
                             if skillRemote then
                                 for skillName, isEnabled in pairs(selectedSkills) do
@@ -164,7 +207,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "S", "X", "C", "V"},
+        Values = {"E", "R", "Z", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
@@ -176,11 +219,13 @@ return function(Fluent, Window, Tabs)
 
     Tabs.Event:AddToggle("Toggle_AutoGraveyard", {
         Title = "Kich Hoat Auto World Event",
-        Description = "Tu tele vao Graveyard, tu tim & danh quai co Highlight Do",
+        Description = "Tele vao phong cho, farm chết từng con quai Highlight Do",
         Default = false,
         Callback = function(Value)
             AutoEventActive = Value
             if Value then
+                -- Reset muc tieu khi bat Toggle
+                currentTargetNPC = nil
                 task.spawn(ProcessAutoEvent)
             end
         end
