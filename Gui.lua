@@ -16,7 +16,8 @@ LocalPlayer.Idled:Connect(function()
 end)
 
 -- GETGENV Bien dung chung cho tat ca Module
-getgenv().NthucHub_WebhookURL = "https://discord.com/api/webhooks/1498312008041496677/bwkREm2-7DhiHjn70oMAIzHyxij6rplXnvg2GmtHTCGfxKlbyGn7iKWNEy7qW0G1cETh"
+if not getgenv().NthucHub_WebhookURL then getgenv().NthucHub_WebhookURL = "https://discord.com/api/webhooks/1498312008041496677/bwkREm2-7DhiHjn70oMAIzHyxij6rplXnvg2GmtHTCGfxKlbyGn7iKWNEy7qW0G1cETh" end
+if not getgenv().NthucHub_ItemWebhook then getgenv().NthucHub_ItemWebhook = "https://discord.com/api/webhooks/1477932375320297533/H0fl2KAjMQgaVRAK7tDnPszEOI9FpuUhfeU7Wa_jnft6XtBmzeKEsXyWAqzrZ3O-xsmN" end
 
 -- ==========================================
 -- 2. LOAD FLUENT UI KICH THUOC TOI UU DPI
@@ -38,8 +39,9 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     AutoRoll = Window:AddTab({ Title = "Auto Arrow", Icon = "target" }),
+    Items    = Window:AddTab({ Title = "Auto Items", Icon = "box" }),
     PvP      = Window:AddTab({ Title = "PvP Queue", Icon = "swords" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }), -- Dong moi them vao
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Webhook  = Window:AddTab({ Title = "Webhook", Icon = "link" }),
     Settings = Window:AddTab({ Title = "Cai Dat Hub", Icon = "settings" })
 }
@@ -101,8 +103,9 @@ end)
 -- ==========================================
 -- 3. CHINH SUA TAB WEBHOOK GOC O DAY
 -- ==========================================
-Tabs.Webhook:AddInput("Input_Webhook", {
-    Title = "Discord Webhook URL",
+Tabs.Webhook:AddSection("WEBHOOK AUTO ARROW & PVP")
+Tabs.Webhook:AddInput("Input_MainWebhook", {
+    Title = "Discord Webhook (Arrow/PvP)",
     Default = getgenv().NthucHub_WebhookURL,
     Placeholder = "Nhap Webhook URL vao day...",
     Numeric = false, Finished = false,
@@ -116,12 +119,18 @@ Tabs.Webhook:AddInput("Input_Webhook", {
 local autoArrowSuccess, autoArrowLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/Autoarrow.lua"))() end)
 if autoArrowSuccess and autoArrowLogic then pcall(function() autoArrowLogic(Fluent, Window, Tabs) end) end
 
+-- Module Auto Items
+local autoItemSuccess, autoItemLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/AutoItems.lua"))() end)
+if autoItemSuccess and autoItemLogic then pcall(function() autoItemLogic(Fluent, Window, Tabs) end) end
+
 -- Module Auto Queue
 local autoQueueSuccess, autoQueueLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/AutoQueue.lua"))() end)
 if autoQueueSuccess and autoQueueLogic then pcall(function() autoQueueLogic(Fluent, Window, Tabs) end) end
+
 -- Module Teleport
 local teleportSuccess, teleportLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/Teleport.lua"))() end)
 if teleportSuccess and teleportLogic then pcall(function() teleportLogic(Fluent, Window, Tabs) end) end
+
 -- ==========================================
 -- 5. SETUP HE THONG LUU CONFIG
 -- ==========================================
