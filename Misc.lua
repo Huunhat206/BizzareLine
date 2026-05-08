@@ -6,15 +6,13 @@ return function(Fluent, Window, Tabs)
 
     local TitleLoopActive = false
     local TitleLoopSpeed = 1.5 
+    local CustomTitleText = "Hacker Chua" -- Mac dinh
 
     local function ProcessTitleLoop()
         local currentIndex = 1
-        
-        -- TOI UU 1: Tim RemoteEvent mot lan duy nhat truoc khi vao vong lap
         local requests = ReplicatedStorage:FindFirstChild("requests")
         local showTitles = requests and requests:FindFirstChild("character") and requests.character:FindFirstChild("ShowTitles")
         
-        -- TOI UU 2: Bien luu tru de chong Decode JSON lien tuc
         local lastJsonString = ""
         local cachedTitles = {}
         
@@ -27,16 +25,14 @@ return function(Fluent, Window, Tabs)
                 if titlesObj and titlesObj.Value then
                     local currentJson = tostring(titlesObj.Value)
                     
-                    -- Chi Decode lai neu chuoi du lieu bi thay doi (VD: Ban vua nhan title moi)
                     if currentJson ~= lastJsonString then
                         local success, decodedTitles = pcall(HttpService.JSONDecode, HttpService, currentJson)
                         if success and type(decodedTitles) == "table" and #decodedTitles > 0 then
                             cachedTitles = decodedTitles
-                            lastJsonString = currentJson -- Luu lai de so sanh cho lan sau
+                            lastJsonString = currentJson
                         end
                     end
                     
-                    -- Su dung danh sach da Cache de chay Loop (Sieu nhe, khong lag)
                     if #cachedTitles > 0 then
                         if currentIndex > #cachedTitles then
                             currentIndex = 1
@@ -44,7 +40,6 @@ return function(Fluent, Window, Tabs)
                         
                         local currentTitle = cachedTitles[currentIndex]
                         
-                        -- Gui lenh len Server
                         if showTitles then
                             showTitles:FireServer(currentTitle)
                         end
@@ -54,11 +49,13 @@ return function(Fluent, Window, Tabs)
                 end
             end)
             
-            -- Nghi 1 khoang thoi gian (dam bao khong bao gio duoi 0.05 de tranh crash)
             task.wait(math.max(TitleLoopSpeed, 0.05))
         end
     end
 
+    -- =============================================
+    -- SECTION 1: TITLE LOOP (Da toi uu chong lag)
+    -- =============================================
     Tabs.Misc:AddSection("TU DONG DOI DANH HIEU (TITLE LOOP)")
 
     Tabs.Misc:AddToggle("Toggle_TitleLoop", {
@@ -82,6 +79,39 @@ return function(Fluent, Window, Tabs)
         Rounding = 1,
         Callback = function(Value)
             TitleLoopSpeed = Value
+        end
+    })
+
+    -- =============================================
+    -- SECTION 2: CUSTOM TITLE (Tu tao danh hieu)
+    -- =============================================
+    Tabs.Misc:AddSection("DANH HIEU TUY CHINH (CUSTOM TITLE)")
+
+    Tabs.Misc:AddInput("Input_CustomTitle", {
+        Title = "Nhap ten danh hieu muon tao",
+        Default = "Hacker Chua",
+        Placeholder = "Nhap chu gi do vao day...",
+        Numeric = false,
+        Finished = false,
+        Callback = function(Value)
+            CustomTitleText = Value
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Cai dat Custom Title",
+        Description = "Test xem server co cho phep tao danh hieu ao khong",
+        Callback = function()
+            pcall(function()
+                local requests = ReplicatedStorage:FindFirstChild("requests")
+                if requests and requests:FindFirstChild("character") then
+                    local showTitles = requests.character:FindFirstChild("ShowTitles")
+                    if showTitles then
+                        -- Gui text tu che len server
+                        showTitles:FireServer(CustomTitleText)
+                    end
+                end
+            end)
         end
     })
 end
