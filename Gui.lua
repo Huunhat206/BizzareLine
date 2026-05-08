@@ -39,6 +39,7 @@ local Window = Fluent:CreateWindow({
 local Tabs = {
     AutoRoll = Window:AddTab({ Title = "Auto Arrow", Icon = "target" }),
     PvP      = Window:AddTab({ Title = "PvP Queue", Icon = "swords" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }), -- Dong moi them vao
     Webhook  = Window:AddTab({ Title = "Webhook", Icon = "link" }),
     Settings = Window:AddTab({ Title = "Cai Dat Hub", Icon = "settings" })
 }
@@ -118,7 +119,9 @@ if autoArrowSuccess and autoArrowLogic then pcall(function() autoArrowLogic(Flue
 -- Module Auto Queue
 local autoQueueSuccess, autoQueueLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/AutoQueue.lua"))() end)
 if autoQueueSuccess and autoQueueLogic then pcall(function() autoQueueLogic(Fluent, Window, Tabs) end) end
-
+-- Module Teleport
+local teleportSuccess, teleportLogic = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/Huunhat206/BizzareLine/refs/heads/main/Teleport.lua"))() end)
+if teleportSuccess and teleportLogic then pcall(function() teleportLogic(Fluent, Window, Tabs) end) end
 -- ==========================================
 -- 5. SETUP HE THONG LUU CONFIG
 -- ==========================================
