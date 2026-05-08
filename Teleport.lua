@@ -2,8 +2,8 @@ return function(Fluent, Window, Tabs)
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
 
-    -- Danh sach ten de hien thi tren Dropdown theo thu tu
-    local locationsOrder = {
+    -- Danh sach ten Bus Stop & Event
+    local busLocationsOrder = {
         "World Event",
         "Bus Stop 1", "Bus Stop 2", "Bus Stop 3", "Bus Stop 4", "Bus Stop 5",
         "Bus Stop 6", "Bus Stop 7", "Bus Stop 8", "Bus Stop 9", "Bus Stop 10",
@@ -11,8 +11,20 @@ return function(Fluent, Window, Tabs)
         "Bus Stop 16", "Bus Stop 17", "Bus Stop 18", "Bus Stop 19"
     }
 
-    -- Toa do tuong ung voi ten
+    -- Danh sach ten Raid
+    local raidLocationsOrder = {
+        "OverHeaven Raid",
+        "Death 13 Raid",
+        "Yoshikage Kira Raid",
+        "Prison Escape Raid",
+        "DIO Raid",
+        "Advol Raid",
+        "Jotaro Kujo Raid Z"
+    }
+
+    -- Toa do tong hop
     local locationCoords = {
+        -- Event & Bus Stops
         ["World Event"] = Vector3.new(1195.57, 875.01, -658.51),
         ["Bus Stop 1"]  = Vector3.new(1291.87, 875.60, -534.47),
         ["Bus Stop 2"]  = Vector3.new(1217.05, 875.06, -58.02),
@@ -32,55 +44,96 @@ return function(Fluent, Window, Tabs)
         ["Bus Stop 16"] = Vector3.new(-1456.29, 910.20, 542.82),
         ["Bus Stop 17"] = Vector3.new(1169.50, 909.80, 1246.85),
         ["Bus Stop 18"] = Vector3.new(1918.50, 933.15, 1439.88),
-        ["Bus Stop 19"] = Vector3.new(1323.12, 875.35, 304.28)
+        ["Bus Stop 19"] = Vector3.new(1323.12, 875.35, 304.28),
+
+        -- Raids
+        ["OverHeaven Raid"]     = Vector3.new(1000.44, 1003.35, 1740.50),
+        ["Death 13 Raid"]       = Vector3.new(833.88, 885.14, -142.43),
+        ["Yoshikage Kira Raid"] = Vector3.new(1024.97, 875.60, -650.56),
+        ["Prison Escape Raid"]  = Vector3.new(882.56, 886.39, -576.65),
+        ["DIO Raid"]            = Vector3.new(2795.86, 950.71, 742.35),
+        ["Advol Raid"]          = Vector3.new(337.35, 876.08, 1025.74),
+        ["Jotaro Kujo Raid Z"]  = Vector3.new(1075.13, 884.23, 204.28)
     }
 
-    Tabs.Teleport:AddSection("DI CHUYEN NHANH KHOANG CACH XA")
+    local function TeleportTo(locationName)
+        if locationName and locationCoords[locationName] then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                -- Cong them 3 vao truc Y de nhan vat khong bi lot xuong dat
+                local targetPos = locationCoords[locationName] + Vector3.new(0, 3, 0)
+                
+                -- Su dung CFrame de dich chuyen tuc thi
+                char.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+                
+                Fluent:Notify({
+                    Title = "Thanh Cong",
+                    Content = "Da dich chuyen den: " .. locationName,
+                    Duration = 3
+                })
+            else
+                Fluent:Notify({
+                    Title = "Loi",
+                    Content = "Khong tim thay nhan vat!",
+                    Duration = 3
+                })
+            end
+        else
+            Fluent:Notify({
+                Title = "Loi",
+                Content = "Vui long chon dia diem hop le!",
+                Duration = 3
+            })
+        end
+    end
 
-    local selectedLoc = "World Event" -- Gia tri mac dinh ban dau
+    -- ==========================================
+    -- KHU VUC 1: BUS STOP & EVENT
+    -- ==========================================
+    Tabs.Teleport:AddSection("1. DI CHUYEN BUS STOP & EVENT")
 
-    Tabs.Teleport:AddDropdown("Drop_Teleport", {
-        Title = "Chon Dia Diem",
-        Values = locationsOrder,
+    local selectedBus = "World Event"
+
+    Tabs.Teleport:AddDropdown("Drop_TeleportBus", {
+        Title = "Chon Dia Diem Bus/Event",
+        Values = busLocationsOrder,
         Multi = false,
         Default = 1,
         Callback = function(Value)
-            selectedLoc = Value
+            selectedBus = Value
         end
     })
 
     Tabs.Teleport:AddButton({
-        Title = "Dich Chuyen (Teleport)",
-        Description = "Nhan de tele toi toa do da chon o tren",
+        Title = "Teleport (Bus Stop / Event)",
+        Description = "Dich chuyen den tram xe buyt hoac su kien the gioi",
         Callback = function()
-            if selectedLoc and locationCoords[selectedLoc] then
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    -- Cong them 3 vao truc Y de nhan vat khong bi lot xuong dat
-                    local targetPos = locationCoords[selectedLoc] + Vector3.new(0, 3, 0)
-                    
-                    -- Su dung CFrame de dich chuyen tuc thi
-                    char.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-                    
-                    Fluent:Notify({
-                        Title = "Thanh Cong",
-                        Content = "Da dich chuyen den: " .. selectedLoc,
-                        Duration = 3
-                    })
-                else
-                    Fluent:Notify({
-                        Title = "Loi",
-                        Content = "Khong tim thay nhan vat!",
-                        Duration = 3
-                    })
-                end
-            else
-                Fluent:Notify({
-                    Title = "Loi",
-                    Content = "Vui long chon dia diem hop le!",
-                    Duration = 3
-                })
-            end
+            TeleportTo(selectedBus)
+        end
+    })
+
+    -- ==========================================
+    -- KHU VUC 2: RAIDS
+    -- ==========================================
+    Tabs.Teleport:AddSection("2. DI CHUYEN KHU VUC RAID")
+
+    local selectedRaid = "OverHeaven Raid"
+
+    Tabs.Teleport:AddDropdown("Drop_TeleportRaid", {
+        Title = "Chon Dia Diem Raid",
+        Values = raidLocationsOrder,
+        Multi = false,
+        Default = 1,
+        Callback = function(Value)
+            selectedRaid = Value
+        end
+    })
+
+    Tabs.Teleport:AddButton({
+        Title = "Teleport (Raid)",
+        Description = "Dich chuyen den khu vuc danh Boss/Raid",
+        Callback = function()
+            TeleportTo(selectedRaid)
         end
     })
 end
