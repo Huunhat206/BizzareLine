@@ -200,7 +200,7 @@ return function(Fluent, Window, Tabs)
     Tabs.Event:AddDropdown("Drop_EventSkills", {
         Title = "Chon Skill su dung (Multi-select)",
         Description = "Tu dong Spam cac skill nay kem M1",
-        Values = {"E", "R", "S", "X", "C", "V"},
+        Values = {"E", "R", "Z", "X", "C", "V"},
         Multi = true,
         Default = {},
         Callback = function(Value)
